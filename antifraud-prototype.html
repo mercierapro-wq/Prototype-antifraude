@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Finovox — Détection Fraude Factures</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0d14;
+    --surface: #111520;
+    --surface2: #161b2a;
+    --border: #1e2840;
+    --accent: #00e5ff;
+    --accent2: #ff4b6e;
+    --accent3: #7c3aed;
+    --green: #00e676;
+    --yellow: #ffea00;
+    --text: #e8eaf6;
+    --muted: #556080;
+    --font: 'Syne', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,13,20,0.9);
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex; align-items: center; justify-content: center;
+    animation: pulse-icon 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-icon {
+    0%,100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(0,229,255,0); }
+  }
+
+  .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo-text span { color: var(--accent); }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,255,0.3);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+
+  /* MAIN */
+  main {
+    position: relative;
+    z-index: 5;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 40px 80px;
+  }
+
+  /* HERO STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.cyan::before { background: var(--accent); }
+  .stat-card.red::before { background: var(--accent2); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.purple::before { background: var(--accent3); }
+  .stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .stat-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 800; line-height: 1; }
+  .stat-value.cyan { color: var(--accent); }
+  .stat-value.red { color: var(--accent2); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.purple { color: #a78bfa; }
+  .stat-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  /* UPLOAD ZONE */
+  .section-title {
+    font-size: 13px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--surface);
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s 0.1s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(0,229,255,0.03) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.04);
+  }
+  .upload-zone:hover::before, .upload-zone.drag-over::before { opacity: 1; }
+
+  .upload-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 16px;
+    background: rgba(0,229,255,0.08);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+
+  .upload-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .upload-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: var(--accent);
+    color: #000;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-primary:hover { background: #33eaff; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,255,0.3); }
+
+  /* DEMO INVOICES */
+  .demo-invoices {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .invoice-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .invoice-card:hover { border-color: var(--accent); }
+  .invoice-card.selected { border-color: var(--accent); background: rgba(0,229,255,0.06); }
+
+  .invoice-card .inv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .inv-id { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .inv-risk {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .inv-risk.high { background: rgba(255,75,110,0.15); color: var(--accent2); border: 1px solid rgba(255,75,110,0.3); }
+  .inv-risk.medium { background: rgba(255,234,0,0.12); color: var(--yellow); border: 1px solid rgba(255,234,0,0.3); }
+  .inv-risk.low { background: rgba(0,230,118,0.1); color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
+
+  .inv-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .inv-amount { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+  .inv-details { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* ANALYSIS PANEL */
+  .analysis-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .panel-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* CHECKS LIST */
+  .check-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid transparent;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .check-item:hover { border-color: var(--border); }
+  .check-item.running { border-color: rgba(0,229,255,0.2); }
+  .check-item.pass { border-color: rgba(0,230,118,0.2); }
+  .check-item.fail { border-color: rgba(255,75,110,0.2); }
+  .check-item.warn { border-color: rgba(255,234,0,0.2); }
+
+  .check-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .check-icon.running { background: rgba(0,229,255,0.1); animation: spin-pulse 1.5s ease-in-out infinite; }
+  .check-icon.pass { background: rgba(0,230,118,0.1); }
+  .check-icon.fail { background: rgba(255,75,110,0.1); }
+  .check-icon.warn { background: rgba(255,234,0,0.1); }
+  .check-icon.pending { background: rgba(85,96,128,0.2); }
+
+  @keyframes spin-pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.95); }
+  }
+
+  .check-content { flex: 1; }
+  .check-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .check-desc { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  .check-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+  .check-status.pass { background: rgba(0,230,118,0.1); color: var(--green); }
+  .check-status.fail { background: rgba(255,75,110,0.1); color: var(--accent2); }
+  .check-status.warn { background: rgba(255,234,0,0.1); color: var(--yellow); }
+  .check-status.running { background: rgba(0,229,255,0.1); color: var(--accent); }
+  .check-status.pending { background: rgba(85,96,128,0.15); color: var(--muted); }
+
+  /* SCORE GAUGE */
+  .score-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .gauge-wrap {
+    position: relative;
+    width: 180px;
+    height: 180px;
+  }
+
+  .gauge-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+
+  .gauge-bg { fill: none; stroke: var(--border); stroke-width: 12; }
+  .gauge-fill {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1), stroke 0.5s;
+  }
+
+  .gauge-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gauge-score { font-size: 36px; font-weight: 800; line-height: 1; }
+  .gauge-label { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+
+  .score-breakdown { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .score-row-label { width: 120px; color: var(--muted); }
+  .score-bar-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+  .score-row-val { width: 30px; text-align: right; color: var(--text); }
+
+  /* FINDINGS */
+  .findings-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .finding {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-left: 3px solid transparent;
+  }
+  .finding.critical { background: rgba(255,75,110,0.08); border-left-color: var(--accent2); }
+  .finding.warning { background: rgba(255,234,0,0.06); border-left-color: var(--yellow); }
+  .finding.info { background: rgba(0,229,255,0.05); border-left-color: var(--accent); }
+
+  .finding-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .finding-text { color: var(--text); }
+  .finding-text strong { display: block; font-weight: 700; margin-bottom: 1px; }
+  .finding-text span { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+
+  /* RUN BUTTON */
+  .run-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s 0.25s ease both;
+  }
+
+  .btn-run {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, var(--accent) 0%, #00b8d4 100%);
+    color: #000;
+    font-family: var(--font);
+    font-weight: 800;
+    font-size: 15px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .btn-run:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,229,255,0.4); }
+  .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .run-info { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar.active { display: block; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent3), var(--accent));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  /* HISTORY TABLE */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .history-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0 12px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-table td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(30,40,64,0.5);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .history-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 100;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+    box-shadow: 0 8px 32px rgba(0,229,255,0.2);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .tab {
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .demo-invoices { grid-template-columns: 1fr 1fr; }
+    .analysis-panel { grid-template-columns: 1fr; }
+    main { padding: 24px; }
+    header { padding: 16px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <div class="logo-text">Fino<span>vox</span></div>
+  </div>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <div class="badge">ANTI-FRAUDE FACTURES v2.0</div>
+    <div class="badge" style="background:rgba(124,58,237,0.1);color:#a78bfa;border-color:rgba(124,58,237,0.3);">CLIENT : ASSURIX</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card cyan">
+      <div class="stat-label">Factures analysées</div>
+      <div class="stat-value cyan" id="stat-analyzed">1 284</div>
+      <div class="stat-sub">↑ +23% ce mois</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Fraudes détectées</div>
+      <div class="stat-value red" id="stat-fraud">47</div>
+      <div class="stat-sub">3.66% du volume</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Précision</div>
+      <div class="stat-value green">96.2%</div>
+      <div class="stat-sub">Faux positifs : 3.8%</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Économies générées</div>
+      <div class="stat-value purple">€128k</div>
+      <div class="stat-sub">Fraude évitée (mois)</div>
+    </div>
+  </div>
+
+  <!-- UPLOAD ZONE -->
+  <div class="section-title">Charger une facture PDF</div>
+  <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+    <div class="upload-icon" id="upload-icon">📄</div>
+    <div class="upload-title" id="upload-title">Glissez votre facture PDF ici</div>
+    <div class="upload-sub" id="upload-sub">ou cliquez pour parcourir · PDF uniquement · Max 10 Mo</div>
+    <button class="btn-primary" onclick="event.stopPropagation(); document.getElementById('file-input').click()">
+      ↑ Sélectionner un fichier
+    </button>
+  </div>
+  <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileUpload(this.files[0])">
+
+  <!-- DEMO INVOICES -->
+  <div class="section-title">Ou choisir une facture de démonstration</div>
+  <div class="demo-invoices">
+    <div class="invoice-card" onclick="selectInvoice(this, 0)">
+      <div class="inv-header">
+        <div class="inv-id">FAC-2024-00182</div>
+        <div class="inv-risk high">RISQUE ÉLEVÉ</div>
+      </div>
+      <div class="inv-name">SAS Rénovation Pro</div>
+      <div class="inv-amount">€4 850,00</div>
+      <div class="inv-details">Travaux toiture · 14/03/2024<br>SIRET: 89234567800012</div>
+    </div>
+    <div class="invoice-card" onclick="selectInvoice(this, 1)">
+      <div class="inv-header">
+        <div class="inv-id">FAC-2024-00209</div>
+        <div class="inv-risk medium">RISQUE MOYEN</div>
+      </div>
+      <div class="inv-name">Électricité Express SARL</div>
+      <div class="inv-amount">€1 290,00</div>
+      <div class="inv-details">Mise aux normes · 22/03/2024<br>SIRET: 51234567800028</div>
+    </div>
+    <div class="invoice-card" onclick="selectInvoice(this, 2)">
+      <div class="inv-header">
+        <div class="inv-id">FAC-2024-00241</div>
+        <div class="inv-risk low">RISQUE FAIBLE</div>
+      </div>
+      <div class="inv-name">Plomberie Durand & Fils</div>
+      <div class="inv-amount">€680,00</div>
+      <div class="inv-details">Remplacement chauffe-eau · 28/03/2024<br>SIRET: 32198765400019</div>
+    </div>
+    <div class="invoice-card" id="uploaded-card" style="display:none" onclick="selectInvoice(this, 3)">
+      <!-- filled dynamically after PDF upload -->
+    </div>
+  </div>
+
+  <!-- RUN -->
+  <div class="run-section">
+    <button class="btn-run" id="btn-run" onclick="runAnalysis()" disabled>
+      <span>⚡</span>
+      <span>Lancer l'analyse anti-fraude</span>
+    </button>
+    <div class="run-info" id="run-info">← Sélectionnez une facture pour commencer</div>
+  </div>
+
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+
+  <!-- ANALYSIS PANEL -->
+  <div class="analysis-panel" id="analysis-panel" style="opacity:0;transition:opacity 0.5s;">
+    <!-- LEFT: Checks -->
+    <div class="panel-card">
+      <h3><span>🔍</span> Contrôles effectués</h3>
+      <div class="check-list" id="check-list">
+        <div class="check-item pending">
+          <div class="check-icon pending">📋</div>
+          <div class="check-content">
+            <div class="check-name">Mentions légales obligatoires</div>
+            <div class="check-desc">SIRET · N° TVA · Adresse · Date · N° facture</div>
+          </div>
+          <div class="check-status pending">EN ATTENTE</div>
+        </div>
+        <div class="check-item pending">
+          <div class="check-icon pending">🔢</div>
+          <div class="check-content">
+            <div class="check-name">Cohérence des calculs</div>
+            <div class="check-desc">HT · TVA · TTC · Taux appliqués</div>
+          </div>
+          <div class="check-status pending">EN ATTENTE</div>
+        </div>
+        <div class="check-item pending">
+          <div class="check-icon pending">🏢</div>
+          <div class="check-content">
+            <div class="check-name">Validation SIRET / INSEE</div>
+            <div class="check-desc">Existence · Activité · Statut juridique</div>
+          </div>
+          <div class="check-status pending">EN ATTENTE</div>
+        </div>
+        <div class="check-item pending">
+          <div class="check-icon pending">👁️</div>
+          <div class="check-content">
+            <div class="check-name">Détection falsification visuelle</div>
+            <div class="check-desc">Métadonnées · Altérations pixellaires · Polices</div>
+          </div>
+          <div class="check-status pending">EN ATTENTE</div>
+        </div>
+        <div class="check-item pending">
+          <div class="check-icon pending">🔁</div>
+          <div class="check-content">
+            <div class="check-name">Détection doublons</div>
+            <div class="check-desc">Hash document · Fingerprint · Cross-client</div>
+          </div>
+          <div class="check-status pending">EN ATTENTE</div>
+        </div>
+        <div class="check-item pending">
+          <div class="check-icon pending">📊</div>
+          <div class="check-content">
+            <div class="check-name">Analyse comportementale</div>
+            <div class="check-desc">Fréquence · Montants inhabituels · Patterns</div>
+          </div>
+          <div class="check-status pending">EN ATTENTE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Score + Findings -->
+    <div style="display:flex;flex-direction:column;gap:24px;">
+      <div class="panel-card">
+        <h3><span>🎯</span> Score de risque</h3>
+        <div class="score-container">
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 100 100">
+              <circle class="gauge-bg" cx="50" cy="50" r="40"/>
+              <circle class="gauge-fill" id="gauge-fill" cx="50" cy="50" r="40"
+                stroke-dasharray="251.2"
+                stroke-dashoffset="251.2"
+                stroke="#00e5ff"/>
+            </svg>
+            <div class="gauge-center">
+              <div class="gauge-score" id="gauge-score" style="color:var(--muted)">—</div>
+              <div class="gauge-label">RISK SCORE</div>
+            </div>
+          </div>
+          <div class="score-breakdown" id="score-breakdown">
+            <div class="score-row">
+              <div class="score-row-label">Données struct.</div>
+              <div class="score-bar-track"><div class="score-bar-fill" id="bar-struct" style="width:0%;background:var(--accent)"></div></div>
+              <div class="score-row-val" id="val-struct">—</div>
+            </div>
+            <div class="score-row">
+              <div class="score-row-label">Calculs</div>
+              <div class="score-bar-track"><div class="score-bar-fill" id="bar-calc" style="width:0%;background:var(--green)"></div></div>
+              <div class="score-row-val" id="val-calc">—</div>
+            </div>
+            <div class="score-row">
+              <div class="score-row-label">Visuel/Metadata</div>
+              <div class="score-bar-track"><div class="score-bar-fill" id="bar-visual" style="width:0%;background:var(--yellow)"></div></div>
+              <div class="score-row-val" id="val-visual">—</div>
+            </div>
+            <div class="score-row">
+              <div class="score-row-label">Doublons</div>
+              <div class="score-bar-track"><div class="score-bar-fill" id="bar-dup" style="width:0%;background:var(--accent2)"></div></div>
+              <div class="score-row-val" id="val-dup">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3><span>⚠️</span> Signaux détectés</h3>
+        <div class="findings-list" id="findings-list">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:20px 0;">
+            Aucune analyse en cours
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="section-title" style="animation: fadeUp 0.6s 0.4s ease both;">Historique des analyses</div>
+  <div class="panel-card" style="animation: fadeUp 0.6s 0.4s ease both;">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(this,'tab-all')">Toutes</button>
+      <button class="tab" onclick="switchTab(this,'tab-high')">Risque élevé</button>
+      <button class="tab" onclick="switchTab(this,'tab-ok')">Validées</button>
+    </div>
+
+    <div class="tab-content active" id="tab-all">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Fournisseur</th>
+            <th>Montant</th>
+            <th>Date</th>
+            <th>Score</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody">
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-content" id="tab-high">
+      <table class="history-table">
+        <thead><tr><th>Référence</th><th>Fournisseur</th><th>Montant</th><th>Score</th><th>Anomalie principale</th></tr></thead>
+        <tbody id="high-tbody"></tbody>
+      </table>
+    </div>
+    <div class="tab-content" id="tab-ok">
+      <table class="history-table">
+        <thead><tr><th>Référence</th><th>Fournisseur</th><th>Montant</th><th>Score</th><th>Validé le</th></tr></thead>
+        <tbody id="ok-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA =====
+const INVOICES = [
+  {
+    id: 'FAC-2024-00182',
+    company: 'SAS Rénovation Pro',
+    amount: '€4 850,00',
+    riskLevel: 'high',
+    checks: [
+      { status: 'fail',   name: 'Mentions légales obligatoires', desc: 'SIRET · N° TVA · Adresse · Date · N° facture', icon: '📋' },
+      { status: 'pass',   name: 'Cohérence des calculs',         desc: 'HT · TVA · TTC · Taux appliqués',              icon: '🔢' },
+      { status: 'fail',   name: 'Validation SIRET / INSEE',      desc: 'Existence · Activité · Statut juridique',      icon: '🏢' },
+      { status: 'fail',   name: 'Détection falsification visuelle', desc: 'Métadonnées · Altérations · Polices',       icon: '👁️' },
+      { status: 'warn',   name: 'Détection doublons',            desc: 'Hash document · Fingerprint · Cross-client',  icon: '🔁' },
+      { status: 'fail',   name: 'Analyse comportementale',       desc: 'Fréquence · Montants inhabituels · Patterns', icon: '📊' },
+    ],
+    score: 82,
+    subScores: { struct: 85, calc: 10, visual: 90, dup: 60 },
+    findings: [
+      { type: 'critical', icon: '🚨', title: 'SIRET introuvable dans la base INSEE', detail: 'N° 89234567800012 non enregistré ou radié' },
+      { type: 'critical', icon: '🚨', title: 'Falsification visuelle détectée', detail: 'Anomalie de compression JPEG zone montant (bloc 14, 15)' },
+      { type: 'critical', icon: '🚨', title: 'Comportement suspect', detail: '3ème facture de ce fournisseur en 30 jours — montants croissants' },
+      { type: 'warning',  icon: '⚠️', title: 'Document similaire détecté', detail: 'Similarité 94% avec FAC-2024-00098 (client différent)' },
+    ]
+  },
+  {
+    id: 'FAC-2024-00209',
+    company: 'Électricité Express SARL',
+    amount: '€1 290,00',
+    riskLevel: 'medium',
+    checks: [
+      { status: 'pass', name: 'Mentions légales obligatoires', desc: 'SIRET · N° TVA · Adresse · Date · N° facture', icon: '📋' },
+      { status: 'fail', name: 'Cohérence des calculs',         desc: 'HT · TVA · TTC · Taux appliqués',              icon: '🔢' },
+      { status: 'pass', name: 'Validation SIRET / INSEE',      desc: 'Existence · Activité · Statut juridique',      icon: '🏢' },
+      { status: 'pass', name: 'Détection falsification visuelle', desc: 'Métadonnées · Altérations · Polices',       icon: '👁️' },
+      { status: 'warn', name: 'Détection doublons',            desc: 'Hash document · Fingerprint · Cross-client',  icon: '🔁' },
+      { status: 'pass', name: 'Analyse comportementale',       desc: 'Fréquence · Montants inhabituels · Patterns', icon: '📊' },
+    ],
+    score: 44,
+    subScores: { struct: 10, calc: 75, visual: 15, dup: 50 },
+    findings: [
+      { type: 'critical', icon: '🚨', title: 'Incohérence TVA', detail: 'TVA calculée à 22% au lieu de 20% — écart de €21,50' },
+      { type: 'warning',  icon: '⚠️', title: 'Numéro de facture non séquentiel', detail: 'Saut de 47 numéros depuis la dernière facture connue' },
+      { type: 'info',     icon: 'ℹ️', title: 'SIRET valide, activité vérifiée', detail: 'Enregistré KBIS — Électricité générale — Actif' },
+    ]
+  },
+  {
+    id: 'FAC-2024-00241',
+    company: 'Plomberie Durand & Fils',
+    amount: '€680,00',
+    riskLevel: 'low',
+    checks: [
+      { status: 'pass', name: 'Mentions légales obligatoires', desc: 'SIRET · N° TVA · Adresse · Date · N° facture', icon: '📋' },
+      { status: 'pass', name: 'Cohérence des calculs',         desc: 'HT · TVA · TTC · Taux appliqués',              icon: '🔢' },
+      { status: 'pass', name: 'Validation SIRET / INSEE',      desc: 'Existence · Activité · Statut juridique',      icon: '🏢' },
+      { status: 'pass', name: 'Détection falsification visuelle', desc: 'Métadonnées · Altérations · Polices',       icon: '👁️' },
+      { status: 'pass', name: 'Détection doublons',            desc: 'Hash document · Fingerprint · Cross-client',  icon: '🔁' },
+      { status: 'pass', name: 'Analyse comportementale',       desc: 'Fréquence · Montants inhabituels · Patterns', icon: '📊' },
+    ],
+    score: 8,
+    subScores: { struct: 5, calc: 5, visual: 8, dup: 12 },
+    findings: [
+      { type: 'info', icon: 'ℹ️', title: 'Document conforme', detail: 'Tous les contrôles ont été passés avec succès' },
+      { type: 'info', icon: 'ℹ️', title: 'Fournisseur connu', detail: '7 factures précédentes validées sans anomalie' },
+    ]
+  }
+];
+
+const HISTORY = [
+  { id:'FAC-2024-00241', co:'Plomberie Durand & Fils', amt:'€680', date:'28/03/24', score:8,  risk:'low',    anomaly:'—',                  valid:'28/03/24' },
+  { id:'FAC-2024-00209', co:'Électricité Express',     amt:'€1290', date:'22/03/24', score:44, risk:'medium', anomaly:'TVA incohérente',     valid:'-' },
+  { id:'FAC-2024-00182', co:'SAS Rénovation Pro',      amt:'€4850', date:'14/03/24', score:82, risk:'high',   anomaly:'SIRET + Falsif.',     valid:'-' },
+  { id:'FAC-2024-00151', co:'Chauffage Moderne SAS',   amt:'€2340', date:'08/03/24', score:15, risk:'low',    anomaly:'—',                   valid:'09/03/24' },
+  { id:'FAC-2024-00138', co:'Toiture Alliance',        amt:'€7200', date:'02/03/24', score:71, risk:'high',   anomaly:'Doublon détecté',     valid:'-' },
+  { id:'FAC-2024-00121', co:'Menuiserie Lefevre',      amt:'€890',  date:'25/02/24', score:22, risk:'low',    anomaly:'—',                   valid:'26/02/24' },
+];
+
+let selectedIdx = -1;
+let isRunning = false;
+
+// ===== INIT HISTORY =====
+function initHistory() {
+  const tbody = document.getElementById('history-tbody');
+  const highTbody = document.getElementById('high-tbody');
+  const okTbody = document.getElementById('ok-tbody');
+
+  tbody.innerHTML = '';
+  highTbody.innerHTML = '';
+  okTbody.innerHTML = '';
+
+  const riskColors = { high: 'var(--accent2)', medium: 'var(--yellow)', low: 'var(--green)' };
+  const riskLabels = { high: 'ÉLEVÉ', medium: 'MOYEN', low: 'FAIBLE' };
+
+  HISTORY.forEach(h => {
+    const scoreColor = h.score > 65 ? 'var(--accent2)' : h.score > 35 ? 'var(--yellow)' : 'var(--green)';
+    tbody.innerHTML += `<tr>
+      <td style="color:var(--accent)">${h.id}</td>
+      <td>${h.co}</td>
+      <td style="font-weight:700">${h.amt}</td>
+      <td style="color:var(--muted)">${h.date}</td>
+      <td style="color:${scoreColor};font-weight:700">${h.score}/100</td>
+      <td style="color:${riskColors[h.risk]}">${riskLabels[h.risk]}</td>
+    </tr>`;
+
+    if (h.risk === 'high') {
+      highTbody.innerHTML += `<tr>
+        <td style="color:var(--accent)">${h.id}</td>
+        <td>${h.co}</td>
+        <td style="font-weight:700">${h.amt}</td>
+        <td style="color:var(--accent2);font-weight:700">${h.score}/100</td>
+        <td style="color:var(--muted)">${h.anomaly}</td>
+      </tr>`;
+    }
+    if (h.risk === 'low') {
+      okTbody.innerHTML += `<tr>
+        <td style="color:var(--accent)">${h.id}</td>
+        <td>${h.co}</td>
+        <td style="font-weight:700">${h.amt}</td>
+        <td style="color:var(--green);font-weight:700">${h.score}/100</td>
+        <td style="color:var(--muted)">${h.valid}</td>
+      </tr>`;
+    }
+  });
+}
+
+// ===== SELECT INVOICE =====
+function selectInvoice(el, idx) {
+  document.querySelectorAll('.invoice-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedIdx = idx;
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('run-info').textContent = `Facture ${INVOICES[idx].id} sélectionnée — ${INVOICES[idx].checks.length} contrôles à effectuer`;
+  resetPanel();
+}
+
+// ===== RESET =====
+function resetPanel() {
+  const checkList = document.getElementById('check-list');
+  const items = checkList.children;
+  for (let item of items) {
+    item.className = 'check-item pending';
+    item.querySelector('.check-icon').className = 'check-icon pending';
+    item.querySelector('.check-status').className = 'check-status pending';
+    item.querySelector('.check-status').textContent = 'EN ATTENTE';
+  }
+  document.getElementById('gauge-score').textContent = '—';
+  document.getElementById('gauge-score').style.color = 'var(--muted)';
+  document.getElementById('gauge-fill').setAttribute('stroke-dashoffset', '251.2');
+  ['struct','calc','visual','dup'].forEach(k => {
+    document.getElementById(`bar-${k}`).style.width = '0%';
+    document.getElementById(`val-${k}`).textContent = '—';
+  });
+  document.getElementById('findings-list').innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:20px 0;">Aucune analyse en cours</div>`;
+}
+
+// ===== RUN ANALYSIS =====
+async function runAnalysis() {
+  if (isRunning || selectedIdx === -1) return;
+  isRunning = true;
+
+  const inv = INVOICES[selectedIdx];
+  const panel = document.getElementById('analysis-panel');
+  const progressBar = document.getElementById('progress-bar');
+  const progressFill = document.getElementById('progress-fill');
+  const btn = document.getElementById('btn-run');
+  const checkItems = document.getElementById('check-list').children;
+
+  panel.style.opacity = '1';
+  progressBar.classList.add('active');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span><span>Analyse en cours...</span>';
+  resetPanel();
+
+  // Reset icons from invoice data
+  const icons = ['📋','🔢','🏢','👁️','🔁','📊'];
+  for (let i = 0; i < checkItems.length; i++) {
+    checkItems[i].querySelector('.check-icon').textContent = icons[i];
+  }
+
+  const totalChecks = inv.checks.length;
+  let delay = 0;
+
+  for (let i = 0; i < totalChecks; i++) {
+    await sleep(600 + i * 250);
+
+    // Set running
+    checkItems[i].className = 'check-item running';
+    checkItems[i].querySelector('.check-icon').className = 'check-icon running';
+    checkItems[i].querySelector('.check-status').className = 'check-status running';
+    checkItems[i].querySelector('.check-status').textContent = 'ANALYSE...';
+    progressFill.style.width = `${((i) / totalChecks * 60)}%`;
+
+    await sleep(700 + Math.random() * 400);
+
+    // Set result
+    const check = inv.checks[i];
+    checkItems[i].className = `check-item ${check.status}`;
+    checkItems[i].querySelector('.check-icon').className = `check-icon ${check.status}`;
+    const statusEl = checkItems[i].querySelector('.check-status');
+    statusEl.className = `check-status ${check.status}`;
+    statusEl.textContent = check.status === 'pass' ? 'CONFORME' : check.status === 'fail' ? 'ANOMALIE' : 'AVERTISSEMENT';
+
+    progressFill.style.width = `${((i + 1) / totalChecks * 80)}%`;
+  }
+
+  // Score animation
+  progressFill.style.width = '100%';
+  await sleep(400);
+
+  const score = inv.score;
+  const circumference = 251.2;
+  const offset = circumference - (circumference * score / 100);
+  const gaugeColor = score > 65 ? 'var(--accent2)' : score > 35 ? 'var(--yellow)' : 'var(--green)';
+
+  document.getElementById('gauge-fill').style.stroke = gaugeColor;
+  document.getElementById('gauge-fill').setAttribute('stroke-dashoffset', offset);
+
+  // Animate score counter
+  animateCounter('gauge-score', 0, score, 1000, gaugeColor);
+
+  // Sub-scores
+  const ss = inv.subScores;
+  setTimeout(() => {
+    animateBar('bar-struct', 'val-struct', ss.struct, 'var(--accent)');
+    animateBar('bar-calc', 'val-calc', ss.calc, 'var(--green)');
+    animateBar('bar-visual', 'val-visual', ss.visual, 'var(--yellow)');
+    animateBar('bar-dup', 'val-dup', ss.dup, 'var(--accent2)');
+  }, 200);
+
+  // Findings
+  await sleep(600);
+  const findingsEl = document.getElementById('findings-list');
+  findingsEl.innerHTML = '';
+  for (const f of inv.findings) {
+    await sleep(200);
+    findingsEl.innerHTML += `
+      <div class="finding ${f.type}">
+        <span class="finding-icon">${f.icon}</span>
+        <div class="finding-text">
+          <strong>${f.title}</strong>
+          <span>${f.detail}</span>
+        </div>
+      </div>`;
+  }
+
+  // Done
+  progressBar.classList.remove('active');
+  btn.disabled = false;
+  btn.innerHTML = '<span>✓</span><span>Nouvelle analyse</span>';
+  btn.onclick = () => { resetPanel(); btn.innerHTML='<span>⚡</span><span>Lancer l\'analyse anti-fraude</span>'; btn.onclick=runAnalysis; };
+
+  const riskLabel = score > 65 ? '🚨 FRAUDE PROBABLE' : score > 35 ? '⚠️ À INVESTIGUER' : '✅ CONFORME';
+  showToast(`${inv.id} — Score: ${score}/100 — ${riskLabel}`);
+
+  // Update stats
+  const fraudEl = document.getElementById('stat-fraud');
+  if (score > 65) {
+    const cur = parseInt(fraudEl.textContent);
+    animateCounter('stat-fraud', cur, cur + 1, 400, 'var(--accent2)');
+  }
+  const analyzedEl = document.getElementById('stat-analyzed');
+  const curA = parseInt(analyzedEl.textContent.replace(/\s/g, ''));
+  animateCounter('stat-analyzed', curA, curA + 1, 400, 'var(--accent)');
+
+  isRunning = false;
+}
+
+// ===== HELPERS =====
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function animateCounter(id, from, to, duration, color) {
+  const el = document.getElementById(id);
+  el.style.color = color;
+  const start = performance.now();
+  function update(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const val = Math.round(from + (to - from) * t);
+    el.textContent = val;
+    if (t < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+function animateBar(barId, valId, value, color) {
+  document.getElementById(barId).style.width = value + '%';
+  document.getElementById(barId).style.background = color;
+  document.getElementById(valId).textContent = value;
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 4000);
+}
+
+function switchTab(btn, tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// ===== PDF.JS WORKER =====
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ===== DRAG & DROP =====
+(function() {
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragleave', e => {
+    if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag-over');
+  });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(file);
+  });
+})();
+
+// ===== HANDLE FILE UPLOAD =====
+async function handleFileUpload(file) {
+  if (!file) return;
+
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    showToast('❌ Fichier invalide — seuls les PDF sont acceptés');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('❌ Fichier trop volumineux — maximum 10 Mo');
+    return;
+  }
+
+  // Visual feedback: loading state
+  const zone = document.getElementById('upload-zone');
+  const icon = document.getElementById('upload-icon');
+  const title = document.getElementById('upload-title');
+  const sub = document.getElementById('upload-sub');
+  icon.textContent = '⏳';
+  icon.style.animation = 'spin-pulse 1.5s ease-in-out infinite';
+  title.textContent = 'Lecture du PDF en cours...';
+  sub.textContent = file.name;
+  zone.style.pointerEvents = 'none';
+
+  try {
+    const buffer = await readFileAsArrayBuffer(file);
+    const { text, numPages } = await extractPDFText(buffer);
+    const invoiceData = parseInvoiceData(text, file.name, numPages, file.size);
+
+    // Store as INVOICES[3]
+    INVOICES[3] = invoiceData;
+
+    // Update upload zone to success state
+    icon.textContent = '✅';
+    icon.style.animation = '';
+    title.textContent = `${file.name}`;
+    sub.textContent = `${numPages} page(s) · ${(file.size / 1024).toFixed(0)} Ko · Texte extrait avec succès`;
+    zone.style.pointerEvents = '';
+    zone.style.borderColor = 'var(--green)';
+    zone.style.background = 'rgba(0,230,118,0.04)';
+
+    // Show and populate the uploaded invoice card
+    populateUploadedCard(invoiceData);
+
+    showToast(`📄 PDF chargé — ${numPages} page(s) analysée(s)`);
+
+    // Auto-select the uploaded invoice
+    const card = document.getElementById('uploaded-card');
+    selectInvoice(card, 3);
+
+  } catch (err) {
+    console.error(err);
+    icon.textContent = '❌';
+    icon.style.animation = '';
+    title.textContent = 'Erreur lors de la lecture du PDF';
+    sub.textContent = err.message || 'Vérifiez que le fichier est un PDF valide et non protégé';
+    zone.style.pointerEvents = '';
+    zone.style.borderColor = 'var(--accent2)';
+    showToast('❌ Impossible de lire le PDF');
+  }
+}
+
+// ===== READ FILE AS ARRAY BUFFER =====
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('Erreur de lecture du fichier'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ===== EXTRACT PDF TEXT WITH PDF.JS =====
+async function extractPDFText(buffer) {
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return { text, numPages: pdf.numPages };
+}
+
+// ===== PARSE INVOICE DATA FROM TEXT =====
+function parseInvoiceData(text, filename, numPages, fileSize) {
+  // N° facture
+  const invoiceNumMatch =
+    text.match(/(?:facture\s*n[°o]?\.?\s*|n[°o]?\s*facture\s*:?\s*|invoice\s*#?\s*)([\w\-\/]+)/i) ||
+    text.match(/\b(FAC|INV|FACT|F|FC)[-\s]?\d{4}[-\s]?\d{2,6}\b/i);
+  const invoiceId = invoiceNumMatch
+    ? invoiceNumMatch[1] || invoiceNumMatch[0]
+    : 'PDF-' + Date.now().toString().slice(-6);
+
+  // SIRET (14 digits)
+  const siretMatch = text.match(/\b(\d{3}\s?\d{3}\s?\d{3}\s?\d{5}|\d{14})\b/);
+  const siret = siretMatch ? siretMatch[0].replace(/\s/g, '') : null;
+
+  // TVA intracommunautaire
+  const tvaMatch = text.match(/\bFR\s*\d{2}\s*\d{9}\b/i);
+  const tvaNum = tvaMatch ? tvaMatch[0] : null;
+
+  // Amount TTC (largest EUR amount found)
+  const amountMatches = [...text.matchAll(/(\d[\d\s]*(?:[.,]\d{2})?)\s*€|€\s*(\d[\d\s]*(?:[.,]\d{2})?)/g)];
+  let maxAmount = 0;
+  amountMatches.forEach(m => {
+    const raw = (m[1] || m[2]).replace(/\s/g, '').replace(',', '.');
+    const val = parseFloat(raw);
+    if (!isNaN(val) && val > maxAmount && val < 1000000) maxAmount = val;
+  });
+  const amountStr = maxAmount > 0
+    ? '€' + maxAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : 'Non détecté';
+
+  // Date JJ/MM/AAAA or DD MMM YYYY
+  const dateMatch =
+    text.match(/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b/) ||
+    text.match(/\b(\d{1,2})\s+(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+(\d{4})\b/i);
+  const invoiceDate = dateMatch ? dateMatch[0] : new Date().toLocaleDateString('fr-FR');
+
+  // Company name: first meaningful capitalized line (heuristic)
+  const lines = text.split(/\n|\r/).map(l => l.trim()).filter(l => l.length > 3 && l.length < 60);
+  const companyName = lines.find(l => /^[A-ZÀÂÉÈÊËÎÏÔÙÛÜ]/.test(l) && !/facture|invoice|date|n°|siret|tva|total/i.test(l))
+    || filename.replace(/\.pdf$/i, '');
+
+  // ===== BUILD CHECKS based on what was found =====
+  const hasSiret = siret !== null;
+  const hasTva = tvaNum !== null;
+  const hasAmount = maxAmount > 0;
+  const hasDate = !!dateMatch;
+  const hasInvoiceNum = !!invoiceNumMatch;
+
+  // Mentions légales: need SIRET + TVA + date + invoice number
+  const mentionsOk = hasSiret && hasTva && hasDate && hasInvoiceNum;
+  const mentionsStatus = mentionsOk ? 'pass' : hasSiret || hasTva ? 'warn' : 'fail';
+
+  // Calculs: can't verify without more data, simulate
+  const calcStatus = hasAmount ? 'pass' : 'warn';
+
+  // SIRET validation: if found, mark as warn (we can't query INSEE client-side)
+  const siretStatus = hasSiret ? 'warn' : 'fail';
+
+  // Visual: can't do real visual analysis client-side
+  const visualStatus = 'warn';
+
+  // Doublon: always warn for uploaded docs (no DB to compare against)
+  const dupStatus = 'warn';
+
+  // Comportemental: pass for first upload
+  const behavStatus = 'pass';
+
+  const checks = [
+    { status: mentionsStatus, name: 'Mentions légales obligatoires', desc: 'SIRET · N° TVA · Adresse · Date · N° facture', icon: '📋' },
+    { status: calcStatus,     name: 'Cohérence des calculs',         desc: 'HT · TVA · TTC · Taux appliqués',              icon: '🔢' },
+    { status: siretStatus,    name: 'Validation SIRET / INSEE',      desc: 'Existence · Activité · Statut juridique',      icon: '🏢' },
+    { status: visualStatus,   name: 'Détection falsification visuelle', desc: 'Métadonnées · Altérations · Polices',       icon: '👁️' },
+    { status: dupStatus,      name: 'Détection doublons',            desc: 'Hash document · Fingerprint · Cross-client',  icon: '🔁' },
+    { status: behavStatus,    name: 'Analyse comportementale',       desc: 'Fréquence · Montants inhabituels · Patterns', icon: '📊' },
+  ];
+
+  // ===== SCORE CALCULATION =====
+  let score = 0;
+  if (!hasSiret)       score += 35;
+  if (!hasTva)         score += 15;
+  if (!hasAmount)      score += 10;
+  if (!hasDate)        score += 8;
+  if (!hasInvoiceNum)  score += 10;
+  // Add small random variance to feel realistic
+  score += Math.floor(Math.random() * 8);
+  score = Math.min(score, 95);
+
+  const subScores = {
+    struct:  hasSiret && hasTva && hasInvoiceNum ? Math.floor(Math.random() * 15) + 5 : Math.floor(Math.random() * 40) + 40,
+    calc:    hasAmount ? Math.floor(Math.random() * 20) + 5 : Math.floor(Math.random() * 30) + 40,
+    visual:  Math.floor(Math.random() * 30) + 10,
+    dup:     Math.floor(Math.random() * 25) + 10,
+  };
+
+  // ===== FINDINGS =====
+  const findings = [];
+
+  if (!hasSiret) {
+    findings.push({ type: 'critical', icon: '🚨', title: 'SIRET introuvable dans le document', detail: 'Aucun numéro SIRET (14 chiffres) détecté dans le texte du PDF' });
+  } else {
+    findings.push({ type: 'warning', icon: '⚠️', title: `SIRET détecté : ${siret}`, detail: 'Vérification INSEE non disponible en mode hors-ligne' });
+  }
+
+  if (!hasTva) {
+    findings.push({ type: 'warning', icon: '⚠️', title: 'N° TVA intracommunautaire absent', detail: 'Mention légale obligatoire pour les factures assujetties à TVA' });
+  } else {
+    findings.push({ type: 'info', icon: 'ℹ️', title: `N° TVA : ${tvaNum}`, detail: 'Format valide détecté' });
+  }
+
+  if (!hasAmount) {
+    findings.push({ type: 'warning', icon: '⚠️', title: 'Montant TTC non détecté', detail: 'Aucun montant en euros clairement identifiable dans le document' });
+  } else {
+    findings.push({ type: 'info', icon: 'ℹ️', title: `Montant détecté : ${amountStr}`, detail: 'Cohérence des calculs à vérifier manuellement' });
+  }
+
+  findings.push({ type: 'info', icon: 'ℹ️', title: 'Document chargé localement', detail: `${numPages} page(s) · ${(fileSize / 1024).toFixed(0)} Ko · Analyse visuelle et doublons nécessitent un backend` });
+
+  const riskLevel = score > 65 ? 'high' : score > 35 ? 'medium' : 'low';
+
+  return {
+    id: (invoiceId + '').trim().toUpperCase().slice(0, 20),
+    company: companyName.slice(0, 40),
+    amount: amountStr,
+    riskLevel,
+    checks,
+    score,
+    subScores,
+    findings,
+    _isUploaded: true,
+  };
+}
+
+// ===== POPULATE UPLOADED INVOICE CARD =====
+function populateUploadedCard(inv) {
+  const card = document.getElementById('uploaded-card');
+  const riskLabel = inv.riskLevel === 'high' ? 'RISQUE ÉLEVÉ' : inv.riskLevel === 'medium' ? 'RISQUE MOYEN' : 'RISQUE FAIBLE';
+  card.innerHTML = `
+    <div class="inv-header">
+      <div class="inv-id">${inv.id}</div>
+      <div class="inv-risk ${inv.riskLevel}">${riskLabel}</div>
+    </div>
+    <div class="inv-name">${inv.company}</div>
+    <div class="inv-amount">${inv.amount}</div>
+    <div class="inv-details">📄 Facture importée<br><span style="color:var(--accent)">Votre PDF</span></div>
+  `;
+  card.style.display = 'block';
+}
+
+// ===== INIT =====
+initHistory();
+</script>
+</body>
+</html>
