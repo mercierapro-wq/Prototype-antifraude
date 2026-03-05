@@ -1,0 +1,5 @@
+{
+  "_comment": "Simulation sortie Tesseract OCR — texte bruité avec espaces/casse irréguliers. Score attendu >= 78 (>= 7/9 champs valides).",
+  "source": "tesseract",
+  "text": "CHAUFFAGE  CLIMA T SERVICES\n45  avenue  du  Moulin\n69100   VILLEURBANNE\nSIRET : 732 829 320 00074\nN  TVA  FR44732829320\n\nFACTURE  N FAC-2024-00455\nDate  15/01/2024\n\nFacture  a :\nGroupama  Rhône-Alpes\n50  rue  Garibaldi\n69003   LYON\n\nRemplacement  chaudière  gaz  murale         2 200,00 E\nMise  en  service  et  test  étanchéité       350,00 E\n\nTotal  HT    2 550,00   Total  TVA  510,00   TTC  3 060,00\n\nPaiement  30  jours.\n\nPenalites  de  retard  applicables  au  taux  legal  en  vigueur."
+}

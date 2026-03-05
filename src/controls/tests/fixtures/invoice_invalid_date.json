@@ -1,0 +1,5 @@
+{
+  "_comment": "Facture avec date impossible 32/03/2024 — emission_date.valid doit être false",
+  "source": "pdf-parse",
+  "text": "MENUISERIE DUPONT SARL\n7 rue des Chênes\n31000 TOULOUSE\nSIRET : 732 829 320 00074\nN° TVA : FR44732829320\n\nFACTURE N° FAC-2024-00201\nDate d'émission : 32/03/2024\n\nFacturé à :\nMNT Assurances\n54 rue de la Victoire\n67000 STRASBOURG\n\nDésignation                          Montant HT\n--------------------------------------------------\nPose fenêtres double vitrage (x3)    2 100,00 €\nMain d'œuvre                           400,00 €\n--------------------------------------------------\nTotal HT                             2 500,00 €\nTVA 20%                                500,00 €\nTotal TTC                            3 000,00 €\n\nPaiement à 45 jours fin de mois.\n\nEn cas de retard, indemnité forfaitaire de recouvrement : 40 €.\nPénalités de retard au taux légal BCE + 10 points."
+}

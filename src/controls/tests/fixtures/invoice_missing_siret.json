@@ -1,0 +1,5 @@
+{
+  "_comment": "Facture sans SIRET — score attendu 89 (8/9 champs valides), missing_fields contient uniquement 'siret'",
+  "source": "pdf-parse",
+  "text": "PLOMBERIE DU SUD\n3 impasse des Platanes\n13008 MARSEILLE\nN° TVA : FR44732829320\n\nFACTURE N° FAC-2024-00089\nDate d'émission : 22/02/2024\n\nFacturé à :\nAXA Assurances Particuliers\n21 boulevard Haussmann\n75009 PARIS\n\nDésignation                          Montant HT\n--------------------------------------------------\nRemplacement chauffe-eau 200L           650,00 €\nPose et raccordements                   150,00 €\n--------------------------------------------------\nTotal HT                                800,00 €\nTVA 20%                                 160,00 €\nTotal TTC                               960,00 €\n\nÉchéance : 30 jours à réception de la facture.\n\nToute facture impayée donnera lieu à des pénalités de retard\ncalculées au taux légal en vigueur (BCE + 10 points)."
+}

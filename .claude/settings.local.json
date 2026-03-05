@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx jest --no-coverage)",
+      "Bash(npm install)",
+      "Bash(netstat -ano)",
+      "Read(//e/Antifraude/Prototype-antifraude/**)",
+      "Bash(npm test -- --no-coverage)"
+    ]
+  }
+}

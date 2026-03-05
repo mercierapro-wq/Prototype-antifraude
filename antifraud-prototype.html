@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Finovox — Détection Fraude Factures</title>
+<title>Antifraude — Détection Fraude Factures</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"/>
 <style>
   :root {
     --bg: #0a0d14;
@@ -548,6 +548,89 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
+  /* API KEY */
+  .api-key-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .api-key-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .api-key-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .api-key-input:focus { border-color: var(--accent); }
+  .api-key-input::placeholder { color: var(--muted); }
+  .api-key-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .api-key-badge.empty   { background: rgba(85,96,128,0.15); color: var(--muted); }
+  .api-key-badge.ok      { background: rgba(0,230,118,0.1);  color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
+
+  /* PAGE NAV */
+  .page-nav {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,13,20,0.95);
+    backdrop-filter: blur(12px);
+    padding: 0 40px;
+  }
+  .page-tab {
+    padding: 13px 22px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--muted);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .page-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .page-tab:hover:not(.active) { color: var(--text); }
+
+  /* SWAGGER WRAPPER */
+  #page-swagger {
+    background: #fff;
+    min-height: calc(100vh - 120px);
+  }
+  #page-swagger #swagger-ui {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 40px 80px;
+  }
+  #page-swagger .swagger-ui .info .title { font-family: var(--font); }
+
   /* Responsive */
   @media (max-width: 900px) {
     .stats-row { grid-template-columns: repeat(2,1fr); }
@@ -563,7 +646,7 @@
 <header>
   <div class="logo">
     <div class="logo-icon"></div>
-    <div class="logo-text">Fino<span>vox</span></div>
+    <div class="logo-text">Anti<span>fraude</span></div>
   </div>
   <div style="display:flex;gap:12px;align-items:center;">
     <div class="badge">ANTI-FRAUDE FACTURES v2.0</div>
@@ -571,30 +654,44 @@
   </div>
 </header>
 
-<main>
+<nav class="page-nav">
+  <button class="page-tab active" id="tab-main" onclick="switchPage('main')">⚡ Détection fraude</button>
+  <button class="page-tab" id="tab-swagger" onclick="switchPage('swagger')">📄 Documentation API</button>
+</nav>
+
+<main id="page-main">
 
   <!-- STATS -->
   <div class="stats-row">
     <div class="stat-card cyan">
       <div class="stat-label">Factures analysées</div>
-      <div class="stat-value cyan" id="stat-analyzed">1 284</div>
-      <div class="stat-sub">↑ +23% ce mois</div>
+      <div class="stat-value cyan" id="stat-analyzed">0</div>
+      <div class="stat-sub">Cette session</div>
     </div>
     <div class="stat-card red">
       <div class="stat-label">Fraudes détectées</div>
-      <div class="stat-value red" id="stat-fraud">47</div>
-      <div class="stat-sub">3.66% du volume</div>
+      <div class="stat-value red" id="stat-fraud">0</div>
+      <div class="stat-sub">Score &gt; 65/100</div>
     </div>
     <div class="stat-card green">
-      <div class="stat-label">Précision</div>
-      <div class="stat-value green">96.2%</div>
-      <div class="stat-sub">Faux positifs : 3.8%</div>
+      <div class="stat-label">Contrôles actifs</div>
+      <div class="stat-value green">6</div>
+      <div class="stat-sub">Mentions · Calculs · SIRET · Visuel · Doublons · Comport.</div>
     </div>
     <div class="stat-card purple">
-      <div class="stat-label">Économies générées</div>
-      <div class="stat-value purple">€128k</div>
-      <div class="stat-sub">Fraude évitée (mois)</div>
+      <div class="stat-label">Module</div>
+      <div class="stat-value purple">v2.0</div>
+      <div class="stat-sub">Anti-fraude factures FR</div>
     </div>
+  </div>
+
+  <!-- API KEY -->
+  <div class="api-key-bar">
+    <div class="api-key-label">🔑 CLÉ API</div>
+    <input type="password" id="api-key-input" class="api-key-input"
+      placeholder="fvx_live_…" autocomplete="off"
+      oninput="updateApiKeyStatus(this.value)" />
+    <div class="api-key-badge empty" id="api-key-badge">NON CONFIGURÉE</div>
   </div>
 
   <!-- UPLOAD ZONE -->
@@ -609,37 +706,9 @@
   </div>
   <input type="file" id="file-input" accept=".pdf" style="display:none" onchange="handleFileUpload(this.files[0])">
 
-  <!-- DEMO INVOICES -->
-  <div class="section-title">Ou choisir une facture de démonstration</div>
+  <!-- UPLOADED INVOICE CARD -->
   <div class="demo-invoices">
-    <div class="invoice-card" onclick="selectInvoice(this, 0)">
-      <div class="inv-header">
-        <div class="inv-id">FAC-2024-00182</div>
-        <div class="inv-risk high">RISQUE ÉLEVÉ</div>
-      </div>
-      <div class="inv-name">SAS Rénovation Pro</div>
-      <div class="inv-amount">€4 850,00</div>
-      <div class="inv-details">Travaux toiture · 14/03/2024<br>SIRET: 89234567800012</div>
-    </div>
-    <div class="invoice-card" onclick="selectInvoice(this, 1)">
-      <div class="inv-header">
-        <div class="inv-id">FAC-2024-00209</div>
-        <div class="inv-risk medium">RISQUE MOYEN</div>
-      </div>
-      <div class="inv-name">Électricité Express SARL</div>
-      <div class="inv-amount">€1 290,00</div>
-      <div class="inv-details">Mise aux normes · 22/03/2024<br>SIRET: 51234567800028</div>
-    </div>
-    <div class="invoice-card" onclick="selectInvoice(this, 2)">
-      <div class="inv-header">
-        <div class="inv-id">FAC-2024-00241</div>
-        <div class="inv-risk low">RISQUE FAIBLE</div>
-      </div>
-      <div class="inv-name">Plomberie Durand & Fils</div>
-      <div class="inv-amount">€680,00</div>
-      <div class="inv-details">Remplacement chauffe-eau · 28/03/2024<br>SIRET: 32198765400019</div>
-    </div>
-    <div class="invoice-card" id="uploaded-card" style="display:none" onclick="selectInvoice(this, 3)">
+    <div class="invoice-card" id="uploaded-card" style="display:none" onclick="selectInvoice(this, 0)">
       <!-- filled dynamically after PDF upload -->
     </div>
   </div>
@@ -809,87 +878,23 @@
 
 </main>
 
+<div id="page-swagger" style="display:none;">
+  <div id="swagger-ui"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // ===== DATA =====
-const INVOICES = [
-  {
-    id: 'FAC-2024-00182',
-    company: 'SAS Rénovation Pro',
-    amount: '€4 850,00',
-    riskLevel: 'high',
-    checks: [
-      { status: 'fail',   name: 'Mentions légales obligatoires', desc: 'SIRET · N° TVA · Adresse · Date · N° facture', icon: '📋' },
-      { status: 'pass',   name: 'Cohérence des calculs',         desc: 'HT · TVA · TTC · Taux appliqués',              icon: '🔢' },
-      { status: 'fail',   name: 'Validation SIRET / INSEE',      desc: 'Existence · Activité · Statut juridique',      icon: '🏢' },
-      { status: 'fail',   name: 'Détection falsification visuelle', desc: 'Métadonnées · Altérations · Polices',       icon: '👁️' },
-      { status: 'warn',   name: 'Détection doublons',            desc: 'Hash document · Fingerprint · Cross-client',  icon: '🔁' },
-      { status: 'fail',   name: 'Analyse comportementale',       desc: 'Fréquence · Montants inhabituels · Patterns', icon: '📊' },
-    ],
-    score: 82,
-    subScores: { struct: 85, calc: 10, visual: 90, dup: 60 },
-    findings: [
-      { type: 'critical', icon: '🚨', title: 'SIRET introuvable dans la base INSEE', detail: 'N° 89234567800012 non enregistré ou radié' },
-      { type: 'critical', icon: '🚨', title: 'Falsification visuelle détectée', detail: 'Anomalie de compression JPEG zone montant (bloc 14, 15)' },
-      { type: 'critical', icon: '🚨', title: 'Comportement suspect', detail: '3ème facture de ce fournisseur en 30 jours — montants croissants' },
-      { type: 'warning',  icon: '⚠️', title: 'Document similaire détecté', detail: 'Similarité 94% avec FAC-2024-00098 (client différent)' },
-    ]
-  },
-  {
-    id: 'FAC-2024-00209',
-    company: 'Électricité Express SARL',
-    amount: '€1 290,00',
-    riskLevel: 'medium',
-    checks: [
-      { status: 'pass', name: 'Mentions légales obligatoires', desc: 'SIRET · N° TVA · Adresse · Date · N° facture', icon: '📋' },
-      { status: 'fail', name: 'Cohérence des calculs',         desc: 'HT · TVA · TTC · Taux appliqués',              icon: '🔢' },
-      { status: 'pass', name: 'Validation SIRET / INSEE',      desc: 'Existence · Activité · Statut juridique',      icon: '🏢' },
-      { status: 'pass', name: 'Détection falsification visuelle', desc: 'Métadonnées · Altérations · Polices',       icon: '👁️' },
-      { status: 'warn', name: 'Détection doublons',            desc: 'Hash document · Fingerprint · Cross-client',  icon: '🔁' },
-      { status: 'pass', name: 'Analyse comportementale',       desc: 'Fréquence · Montants inhabituels · Patterns', icon: '📊' },
-    ],
-    score: 44,
-    subScores: { struct: 10, calc: 75, visual: 15, dup: 50 },
-    findings: [
-      { type: 'critical', icon: '🚨', title: 'Incohérence TVA', detail: 'TVA calculée à 22% au lieu de 20% — écart de €21,50' },
-      { type: 'warning',  icon: '⚠️', title: 'Numéro de facture non séquentiel', detail: 'Saut de 47 numéros depuis la dernière facture connue' },
-      { type: 'info',     icon: 'ℹ️', title: 'SIRET valide, activité vérifiée', detail: 'Enregistré KBIS — Électricité générale — Actif' },
-    ]
-  },
-  {
-    id: 'FAC-2024-00241',
-    company: 'Plomberie Durand & Fils',
-    amount: '€680,00',
-    riskLevel: 'low',
-    checks: [
-      { status: 'pass', name: 'Mentions légales obligatoires', desc: 'SIRET · N° TVA · Adresse · Date · N° facture', icon: '📋' },
-      { status: 'pass', name: 'Cohérence des calculs',         desc: 'HT · TVA · TTC · Taux appliqués',              icon: '🔢' },
-      { status: 'pass', name: 'Validation SIRET / INSEE',      desc: 'Existence · Activité · Statut juridique',      icon: '🏢' },
-      { status: 'pass', name: 'Détection falsification visuelle', desc: 'Métadonnées · Altérations · Polices',       icon: '👁️' },
-      { status: 'pass', name: 'Détection doublons',            desc: 'Hash document · Fingerprint · Cross-client',  icon: '🔁' },
-      { status: 'pass', name: 'Analyse comportementale',       desc: 'Fréquence · Montants inhabituels · Patterns', icon: '📊' },
-    ],
-    score: 8,
-    subScores: { struct: 5, calc: 5, visual: 8, dup: 12 },
-    findings: [
-      { type: 'info', icon: 'ℹ️', title: 'Document conforme', detail: 'Tous les contrôles ont été passés avec succès' },
-      { type: 'info', icon: 'ℹ️', title: 'Fournisseur connu', detail: '7 factures précédentes validées sans anomalie' },
-    ]
-  }
-];
+// INVOICES[0] = facture uploadée (rempli dynamiquement après upload PDF)
+const INVOICES = [null];
 
-const HISTORY = [
-  { id:'FAC-2024-00241', co:'Plomberie Durand & Fils', amt:'€680', date:'28/03/24', score:8,  risk:'low',    anomaly:'—',                  valid:'28/03/24' },
-  { id:'FAC-2024-00209', co:'Électricité Express',     amt:'€1290', date:'22/03/24', score:44, risk:'medium', anomaly:'TVA incohérente',     valid:'-' },
-  { id:'FAC-2024-00182', co:'SAS Rénovation Pro',      amt:'€4850', date:'14/03/24', score:82, risk:'high',   anomaly:'SIRET + Falsif.',     valid:'-' },
-  { id:'FAC-2024-00151', co:'Chauffage Moderne SAS',   amt:'€2340', date:'08/03/24', score:15, risk:'low',    anomaly:'—',                   valid:'09/03/24' },
-  { id:'FAC-2024-00138', co:'Toiture Alliance',        amt:'€7200', date:'02/03/24', score:71, risk:'high',   anomaly:'Doublon détecté',     valid:'-' },
-  { id:'FAC-2024-00121', co:'Menuiserie Lefevre',      amt:'€890',  date:'25/02/24', score:22, risk:'low',    anomaly:'—',                   valid:'26/02/24' },
-];
+// Historique des analyses de la session courante (alimenté dynamiquement)
+const HISTORY = [];
 
 let selectedIdx = -1;
 let isRunning = false;
+let currentFile = null;
 
 // ===== INIT HISTORY =====
 function initHistory() {
@@ -897,9 +902,10 @@ function initHistory() {
   const highTbody = document.getElementById('high-tbody');
   const okTbody = document.getElementById('ok-tbody');
 
-  tbody.innerHTML = '';
-  highTbody.innerHTML = '';
-  okTbody.innerHTML = '';
+  const EMPTY = `<tr><td colspan="6" style="text-align:center;color:var(--muted);font-family:var(--mono);font-size:11px;padding:20px 0;">Aucune analyse effectuée</td></tr>`;
+  tbody.innerHTML = HISTORY.length ? '' : EMPTY;
+  highTbody.innerHTML = HISTORY.some(h => h.risk === 'high') ? '' : EMPTY;
+  okTbody.innerHTML   = HISTORY.some(h => h.risk === 'low')  ? '' : EMPTY;
 
   const riskColors = { high: 'var(--accent2)', medium: 'var(--yellow)', low: 'var(--green)' };
   const riskLabels = { high: 'ÉLEVÉ', medium: 'MOYEN', low: 'FAIBLE' };
@@ -942,7 +948,7 @@ function selectInvoice(el, idx) {
   el.classList.add('selected');
   selectedIdx = idx;
   document.getElementById('btn-run').disabled = false;
-  document.getElementById('run-info').textContent = `Facture ${INVOICES[idx].id} sélectionnée — ${INVOICES[idx].checks.length} contrôles à effectuer`;
+  document.getElementById('run-info').textContent = 'PDF prêt — cliquez pour lancer l\'analyse';
   resetPanel();
 }
 
@@ -968,114 +974,106 @@ function resetPanel() {
 
 // ===== RUN ANALYSIS =====
 async function runAnalysis() {
-  if (isRunning || selectedIdx === -1) return;
+  if (isRunning || !currentFile) return;
   isRunning = true;
 
-  const inv = INVOICES[selectedIdx];
   const panel = document.getElementById('analysis-panel');
   const progressBar = document.getElementById('progress-bar');
   const progressFill = document.getElementById('progress-fill');
   const btn = document.getElementById('btn-run');
-  const checkItems = document.getElementById('check-list').children;
 
   panel.style.opacity = '1';
   progressBar.classList.add('active');
   btn.disabled = true;
   btn.innerHTML = '<span>⏳</span><span>Analyse en cours...</span>';
+  progressFill.style.width = '20%';
   resetPanel();
 
-  // Reset icons from invoice data
+  try {
+    progressFill.style.width = '60%';
+    const data = await analyzeWithBackend(currentFile);
+    progressFill.style.width = '100%';
+
+    const inv = mapApiResponse(data);
+    INVOICES[0] = inv;
+
+    populateUploadedCard(inv);
+    displayAllResults(inv);
+
+    const today = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+    const mainAnomaly = inv.findings.find(f => f.type === 'critical')?.title || inv.findings.find(f => f.type === 'warning')?.title || '—';
+    HISTORY.unshift({
+      id: inv.id, co: inv.company, amt: inv.amount,
+      date: today, score: inv.score, risk: inv.riskLevel,
+      anomaly: mainAnomaly.slice(0, 30),
+      valid: inv.riskLevel === 'low' ? today : '-',
+    });
+    initHistory();
+
+    if (inv.score > 65) {
+      const cur = parseInt(document.getElementById('stat-fraud').textContent);
+      animateCounter('stat-fraud', cur, cur + 1, 400, 'var(--accent2)');
+    }
+    const curA = parseInt(document.getElementById('stat-analyzed').textContent.replace(/\s/g, ''));
+    animateCounter('stat-analyzed', curA, curA + 1, 400, 'var(--accent)');
+
+    const riskLabel = inv.score > 65 ? '🚨 FRAUDE PROBABLE' : inv.score > 35 ? '⚠️ À INVESTIGUER' : '✅ CONFORME';
+    showToast(`${inv.id} — Score: ${inv.score}/100 — ${riskLabel}`);
+
+    btn.disabled = false;
+    btn.innerHTML = '<span>✓</span><span>Relancer l\'analyse</span>';
+
+  } catch (err) {
+    console.error(err);
+    const isNetworkError = err instanceof TypeError && err.message.includes('fetch');
+    showToast(isNetworkError ? '❌ Backend non disponible — npm run dev' : '❌ ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<span>⚡</span><span>Lancer l\'analyse anti-fraude</span>';
+  }
+
+  progressBar.classList.remove('active');
+  isRunning = false;
+}
+
+// ===== DISPLAY ALL RESULTS (sans délai) =====
+function displayAllResults(inv) {
+  const checkItems = document.getElementById('check-list').children;
   const icons = ['📋','🔢','🏢','👁️','🔁','📊'];
-  for (let i = 0; i < checkItems.length; i++) {
-    checkItems[i].querySelector('.check-icon').textContent = icons[i];
-  }
+  const statusLabels = { pass: 'CONFORME', fail: 'ANOMALIE', warn: 'AVERTISSEMENT' };
 
-  const totalChecks = inv.checks.length;
-  let delay = 0;
-
-  for (let i = 0; i < totalChecks; i++) {
-    await sleep(600 + i * 250);
-
-    // Set running
-    checkItems[i].className = 'check-item running';
-    checkItems[i].querySelector('.check-icon').className = 'check-icon running';
-    checkItems[i].querySelector('.check-status').className = 'check-status running';
-    checkItems[i].querySelector('.check-status').textContent = 'ANALYSE...';
-    progressFill.style.width = `${((i) / totalChecks * 60)}%`;
-
-    await sleep(700 + Math.random() * 400);
-
-    // Set result
+  for (let i = 0; i < inv.checks.length; i++) {
     const check = inv.checks[i];
-    checkItems[i].className = `check-item ${check.status}`;
-    checkItems[i].querySelector('.check-icon').className = `check-icon ${check.status}`;
-    const statusEl = checkItems[i].querySelector('.check-status');
+    const item = checkItems[i];
+    item.className = `check-item ${check.status}`;
+    item.querySelector('.check-icon').className = `check-icon ${check.status}`;
+    item.querySelector('.check-icon').textContent = icons[i];
+    const statusEl = item.querySelector('.check-status');
     statusEl.className = `check-status ${check.status}`;
-    statusEl.textContent = check.status === 'pass' ? 'CONFORME' : check.status === 'fail' ? 'ANOMALIE' : 'AVERTISSEMENT';
-
-    progressFill.style.width = `${((i + 1) / totalChecks * 80)}%`;
+    statusEl.textContent = statusLabels[check.status] ?? check.status.toUpperCase();
   }
-
-  // Score animation
-  progressFill.style.width = '100%';
-  await sleep(400);
 
   const score = inv.score;
   const circumference = 251.2;
   const offset = circumference - (circumference * score / 100);
   const gaugeColor = score > 65 ? 'var(--accent2)' : score > 35 ? 'var(--yellow)' : 'var(--green)';
-
   document.getElementById('gauge-fill').style.stroke = gaugeColor;
   document.getElementById('gauge-fill').setAttribute('stroke-dashoffset', offset);
+  animateCounter('gauge-score', 0, score, 800, gaugeColor);
 
-  // Animate score counter
-  animateCounter('gauge-score', 0, score, 1000, gaugeColor);
-
-  // Sub-scores
   const ss = inv.subScores;
-  setTimeout(() => {
-    animateBar('bar-struct', 'val-struct', ss.struct, 'var(--accent)');
-    animateBar('bar-calc', 'val-calc', ss.calc, 'var(--green)');
-    animateBar('bar-visual', 'val-visual', ss.visual, 'var(--yellow)');
-    animateBar('bar-dup', 'val-dup', ss.dup, 'var(--accent2)');
-  }, 200);
+  animateBar('bar-struct', 'val-struct', ss.struct, 'var(--accent)');
+  animateBar('bar-calc', 'val-calc', ss.calc, 'var(--green)');
+  animateBar('bar-visual', 'val-visual', ss.visual, 'var(--yellow)');
+  animateBar('bar-dup', 'val-dup', ss.dup, 'var(--accent2)');
 
-  // Findings
-  await sleep(600);
-  const findingsEl = document.getElementById('findings-list');
-  findingsEl.innerHTML = '';
-  for (const f of inv.findings) {
-    await sleep(200);
-    findingsEl.innerHTML += `
-      <div class="finding ${f.type}">
-        <span class="finding-icon">${f.icon}</span>
-        <div class="finding-text">
-          <strong>${f.title}</strong>
-          <span>${f.detail}</span>
-        </div>
-      </div>`;
-  }
-
-  // Done
-  progressBar.classList.remove('active');
-  btn.disabled = false;
-  btn.innerHTML = '<span>✓</span><span>Nouvelle analyse</span>';
-  btn.onclick = () => { resetPanel(); btn.innerHTML='<span>⚡</span><span>Lancer l\'analyse anti-fraude</span>'; btn.onclick=runAnalysis; };
-
-  const riskLabel = score > 65 ? '🚨 FRAUDE PROBABLE' : score > 35 ? '⚠️ À INVESTIGUER' : '✅ CONFORME';
-  showToast(`${inv.id} — Score: ${score}/100 — ${riskLabel}`);
-
-  // Update stats
-  const fraudEl = document.getElementById('stat-fraud');
-  if (score > 65) {
-    const cur = parseInt(fraudEl.textContent);
-    animateCounter('stat-fraud', cur, cur + 1, 400, 'var(--accent2)');
-  }
-  const analyzedEl = document.getElementById('stat-analyzed');
-  const curA = parseInt(analyzedEl.textContent.replace(/\s/g, ''));
-  animateCounter('stat-analyzed', curA, curA + 1, 400, 'var(--accent)');
-
-  isRunning = false;
+  document.getElementById('findings-list').innerHTML = inv.findings.map(f => `
+    <div class="finding ${f.type}">
+      <span class="finding-icon">${f.icon}</span>
+      <div class="finding-text">
+        <strong>${f.title}</strong>
+        <span>${f.detail}</span>
+      </div>
+    </div>`).join('');
 }
 
 // ===== HELPERS =====
@@ -1114,9 +1112,6 @@ function switchTab(btn, tabId) {
   document.getElementById(tabId).classList.add('active');
 }
 
-// ===== PDF.JS WORKER =====
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
 // ===== DRAG & DROP =====
 (function() {
   const zone = document.getElementById('upload-zone');
@@ -1135,8 +1130,51 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
   });
 })();
 
+// ===== API =====
+const API_BASE = 'http://localhost:3002/api';
+
+async function analyzeWithBackend(file) {
+  const apiKey = document.getElementById('api-key-input').value.trim();
+  const fd = new FormData();
+  fd.append('file', file);
+  const headers = {};
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const res = await fetch(`${API_BASE}/analyze`, { method: 'POST', body: fd, headers });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error('Clé API invalide — vérifiez votre clé dans le champ ci-dessus');
+    throw new Error(err.error || `Erreur serveur ${res.status}`);
+  }
+  return res.json();
+}
+
+function updateApiKeyStatus(value) {
+  const badge = document.getElementById('api-key-badge');
+  if (value.trim().length > 0) {
+    badge.textContent = 'CONFIGURÉE';
+    badge.className = 'api-key-badge ok';
+  } else {
+    badge.textContent = 'NON CONFIGURÉE';
+    badge.className = 'api-key-badge empty';
+  }
+}
+
+function mapApiResponse(data) {
+  return {
+    id:        data.invoice_id,
+    company:   data.company,
+    amount:    data.amount,
+    riskLevel: data.risk_level,
+    checks:    data.checks,
+    score:     data.risk_score,
+    subScores: data.sub_scores,
+    findings:  data.findings,
+    _isUploaded: true,
+  };
+}
+
 // ===== HANDLE FILE UPLOAD =====
-async function handleFileUpload(file) {
+function handleFileUpload(file) {
   if (!file) return;
 
   if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -1148,210 +1186,43 @@ async function handleFileUpload(file) {
     return;
   }
 
-  // Visual feedback: loading state
-  const zone = document.getElementById('upload-zone');
-  const icon = document.getElementById('upload-icon');
+  currentFile = file;
+
+  const zone  = document.getElementById('upload-zone');
+  const icon  = document.getElementById('upload-icon');
   const title = document.getElementById('upload-title');
-  const sub = document.getElementById('upload-sub');
-  icon.textContent = '⏳';
-  icon.style.animation = 'spin-pulse 1.5s ease-in-out infinite';
-  title.textContent = 'Lecture du PDF en cours...';
-  sub.textContent = file.name;
-  zone.style.pointerEvents = 'none';
+  const sub   = document.getElementById('upload-sub');
 
-  try {
-    const buffer = await readFileAsArrayBuffer(file);
-    const { text, numPages } = await extractPDFText(buffer);
-    const invoiceData = parseInvoiceData(text, file.name, numPages, file.size);
+  icon.textContent = '📄';
+  icon.style.animation = '';
+  title.textContent = file.name;
+  sub.textContent = `${(file.size / 1024).toFixed(0)} Ko · PDF prêt pour l'analyse`;
+  zone.style.borderColor = 'var(--green)';
+  zone.style.background = 'rgba(0,230,118,0.04)';
 
-    // Store as INVOICES[3]
-    INVOICES[3] = invoiceData;
+  populatePendingCard(file);
+  showToast(`📄 ${file.name} chargé — cliquez sur Lancer l'analyse`);
 
-    // Update upload zone to success state
-    icon.textContent = '✅';
-    icon.style.animation = '';
-    title.textContent = `${file.name}`;
-    sub.textContent = `${numPages} page(s) · ${(file.size / 1024).toFixed(0)} Ko · Texte extrait avec succès`;
-    zone.style.pointerEvents = '';
-    zone.style.borderColor = 'var(--green)';
-    zone.style.background = 'rgba(0,230,118,0.04)';
-
-    // Show and populate the uploaded invoice card
-    populateUploadedCard(invoiceData);
-
-    showToast(`📄 PDF chargé — ${numPages} page(s) analysée(s)`);
-
-    // Auto-select the uploaded invoice
-    const card = document.getElementById('uploaded-card');
-    selectInvoice(card, 3);
-
-  } catch (err) {
-    console.error(err);
-    icon.textContent = '❌';
-    icon.style.animation = '';
-    title.textContent = 'Erreur lors de la lecture du PDF';
-    sub.textContent = err.message || 'Vérifiez que le fichier est un PDF valide et non protégé';
-    zone.style.pointerEvents = '';
-    zone.style.borderColor = 'var(--accent2)';
-    showToast('❌ Impossible de lire le PDF');
-  }
+  const card = document.getElementById('uploaded-card');
+  selectInvoice(card, 0);
 }
 
-// ===== READ FILE AS ARRAY BUFFER =====
-function readFileAsArrayBuffer(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.onerror = () => reject(new Error('Erreur de lecture du fichier'));
-    reader.readAsArrayBuffer(file);
-  });
+// ===== CARTE EN ATTENTE (avant analyse) =====
+function populatePendingCard(file) {
+  const card = document.getElementById('uploaded-card');
+  card.innerHTML = `
+    <div class="inv-header">
+      <div class="inv-id">—</div>
+      <div class="inv-risk medium">EN ATTENTE</div>
+    </div>
+    <div class="inv-name">${file.name.replace(/\.pdf$/i, '').slice(0, 35)}</div>
+    <div class="inv-amount" style="color:var(--muted);font-size:14px;font-weight:400">Non analysé</div>
+    <div class="inv-details">📄 ${(file.size / 1024).toFixed(0)} Ko · Prêt pour l'analyse</div>
+  `;
+  card.style.display = 'block';
 }
 
-// ===== EXTRACT PDF TEXT WITH PDF.JS =====
-async function extractPDFText(buffer) {
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  let text = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map(item => item.str).join(' ') + '\n';
-  }
-  return { text, numPages: pdf.numPages };
-}
-
-// ===== PARSE INVOICE DATA FROM TEXT =====
-function parseInvoiceData(text, filename, numPages, fileSize) {
-  // N° facture
-  const invoiceNumMatch =
-    text.match(/(?:facture\s*n[°o]?\.?\s*|n[°o]?\s*facture\s*:?\s*|invoice\s*#?\s*)([\w\-\/]+)/i) ||
-    text.match(/\b(FAC|INV|FACT|F|FC)[-\s]?\d{4}[-\s]?\d{2,6}\b/i);
-  const invoiceId = invoiceNumMatch
-    ? invoiceNumMatch[1] || invoiceNumMatch[0]
-    : 'PDF-' + Date.now().toString().slice(-6);
-
-  // SIRET (14 digits)
-  const siretMatch = text.match(/\b(\d{3}\s?\d{3}\s?\d{3}\s?\d{5}|\d{14})\b/);
-  const siret = siretMatch ? siretMatch[0].replace(/\s/g, '') : null;
-
-  // TVA intracommunautaire
-  const tvaMatch = text.match(/\bFR\s*\d{2}\s*\d{9}\b/i);
-  const tvaNum = tvaMatch ? tvaMatch[0] : null;
-
-  // Amount TTC (largest EUR amount found)
-  const amountMatches = [...text.matchAll(/(\d[\d\s]*(?:[.,]\d{2})?)\s*€|€\s*(\d[\d\s]*(?:[.,]\d{2})?)/g)];
-  let maxAmount = 0;
-  amountMatches.forEach(m => {
-    const raw = (m[1] || m[2]).replace(/\s/g, '').replace(',', '.');
-    const val = parseFloat(raw);
-    if (!isNaN(val) && val > maxAmount && val < 1000000) maxAmount = val;
-  });
-  const amountStr = maxAmount > 0
-    ? '€' + maxAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : 'Non détecté';
-
-  // Date JJ/MM/AAAA or DD MMM YYYY
-  const dateMatch =
-    text.match(/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b/) ||
-    text.match(/\b(\d{1,2})\s+(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+(\d{4})\b/i);
-  const invoiceDate = dateMatch ? dateMatch[0] : new Date().toLocaleDateString('fr-FR');
-
-  // Company name: first meaningful capitalized line (heuristic)
-  const lines = text.split(/\n|\r/).map(l => l.trim()).filter(l => l.length > 3 && l.length < 60);
-  const companyName = lines.find(l => /^[A-ZÀÂÉÈÊËÎÏÔÙÛÜ]/.test(l) && !/facture|invoice|date|n°|siret|tva|total/i.test(l))
-    || filename.replace(/\.pdf$/i, '');
-
-  // ===== BUILD CHECKS based on what was found =====
-  const hasSiret = siret !== null;
-  const hasTva = tvaNum !== null;
-  const hasAmount = maxAmount > 0;
-  const hasDate = !!dateMatch;
-  const hasInvoiceNum = !!invoiceNumMatch;
-
-  // Mentions légales: need SIRET + TVA + date + invoice number
-  const mentionsOk = hasSiret && hasTva && hasDate && hasInvoiceNum;
-  const mentionsStatus = mentionsOk ? 'pass' : hasSiret || hasTva ? 'warn' : 'fail';
-
-  // Calculs: can't verify without more data, simulate
-  const calcStatus = hasAmount ? 'pass' : 'warn';
-
-  // SIRET validation: if found, mark as warn (we can't query INSEE client-side)
-  const siretStatus = hasSiret ? 'warn' : 'fail';
-
-  // Visual: can't do real visual analysis client-side
-  const visualStatus = 'warn';
-
-  // Doublon: always warn for uploaded docs (no DB to compare against)
-  const dupStatus = 'warn';
-
-  // Comportemental: pass for first upload
-  const behavStatus = 'pass';
-
-  const checks = [
-    { status: mentionsStatus, name: 'Mentions légales obligatoires', desc: 'SIRET · N° TVA · Adresse · Date · N° facture', icon: '📋' },
-    { status: calcStatus,     name: 'Cohérence des calculs',         desc: 'HT · TVA · TTC · Taux appliqués',              icon: '🔢' },
-    { status: siretStatus,    name: 'Validation SIRET / INSEE',      desc: 'Existence · Activité · Statut juridique',      icon: '🏢' },
-    { status: visualStatus,   name: 'Détection falsification visuelle', desc: 'Métadonnées · Altérations · Polices',       icon: '👁️' },
-    { status: dupStatus,      name: 'Détection doublons',            desc: 'Hash document · Fingerprint · Cross-client',  icon: '🔁' },
-    { status: behavStatus,    name: 'Analyse comportementale',       desc: 'Fréquence · Montants inhabituels · Patterns', icon: '📊' },
-  ];
-
-  // ===== SCORE CALCULATION =====
-  let score = 0;
-  if (!hasSiret)       score += 35;
-  if (!hasTva)         score += 15;
-  if (!hasAmount)      score += 10;
-  if (!hasDate)        score += 8;
-  if (!hasInvoiceNum)  score += 10;
-  // Add small random variance to feel realistic
-  score += Math.floor(Math.random() * 8);
-  score = Math.min(score, 95);
-
-  const subScores = {
-    struct:  hasSiret && hasTva && hasInvoiceNum ? Math.floor(Math.random() * 15) + 5 : Math.floor(Math.random() * 40) + 40,
-    calc:    hasAmount ? Math.floor(Math.random() * 20) + 5 : Math.floor(Math.random() * 30) + 40,
-    visual:  Math.floor(Math.random() * 30) + 10,
-    dup:     Math.floor(Math.random() * 25) + 10,
-  };
-
-  // ===== FINDINGS =====
-  const findings = [];
-
-  if (!hasSiret) {
-    findings.push({ type: 'critical', icon: '🚨', title: 'SIRET introuvable dans le document', detail: 'Aucun numéro SIRET (14 chiffres) détecté dans le texte du PDF' });
-  } else {
-    findings.push({ type: 'warning', icon: '⚠️', title: `SIRET détecté : ${siret}`, detail: 'Vérification INSEE non disponible en mode hors-ligne' });
-  }
-
-  if (!hasTva) {
-    findings.push({ type: 'warning', icon: '⚠️', title: 'N° TVA intracommunautaire absent', detail: 'Mention légale obligatoire pour les factures assujetties à TVA' });
-  } else {
-    findings.push({ type: 'info', icon: 'ℹ️', title: `N° TVA : ${tvaNum}`, detail: 'Format valide détecté' });
-  }
-
-  if (!hasAmount) {
-    findings.push({ type: 'warning', icon: '⚠️', title: 'Montant TTC non détecté', detail: 'Aucun montant en euros clairement identifiable dans le document' });
-  } else {
-    findings.push({ type: 'info', icon: 'ℹ️', title: `Montant détecté : ${amountStr}`, detail: 'Cohérence des calculs à vérifier manuellement' });
-  }
-
-  findings.push({ type: 'info', icon: 'ℹ️', title: 'Document chargé localement', detail: `${numPages} page(s) · ${(fileSize / 1024).toFixed(0)} Ko · Analyse visuelle et doublons nécessitent un backend` });
-
-  const riskLevel = score > 65 ? 'high' : score > 35 ? 'medium' : 'low';
-
-  return {
-    id: (invoiceId + '').trim().toUpperCase().slice(0, 20),
-    company: companyName.slice(0, 40),
-    amount: amountStr,
-    riskLevel,
-    checks,
-    score,
-    subScores,
-    findings,
-    _isUploaded: true,
-  };
-}
-
-// ===== POPULATE UPLOADED INVOICE CARD =====
+// ===== CARTE APRÈS ANALYSE =====
 function populateUploadedCard(inv) {
   const card = document.getElementById('uploaded-card');
   const riskLabel = inv.riskLevel === 'high' ? 'RISQUE ÉLEVÉ' : inv.riskLevel === 'medium' ? 'RISQUE MOYEN' : 'RISQUE FAIBLE';
@@ -1362,13 +1233,201 @@ function populateUploadedCard(inv) {
     </div>
     <div class="inv-name">${inv.company}</div>
     <div class="inv-amount">${inv.amount}</div>
-    <div class="inv-details">📄 Facture importée<br><span style="color:var(--accent)">Votre PDF</span></div>
+    <div class="inv-details">📄 Facture analysée<br><span style="color:var(--accent)">Score : ${inv.score}/100</span></div>
   `;
   card.style.display = 'block';
+}
+
+// ===== SWAGGER =====
+const API_SPEC = {
+  openapi: '3.0.0',
+  info: {
+    title: 'Finovox Anti-Fraude API',
+    version: '2.0.0',
+    description: `API de vérification automatique et détection de fraude sur **factures françaises B2B**.\n\nConçue pour le secteur de l'assurance : parcours de remboursement et gestion des sinistres.\n\n### Contrôles effectués\n- **Mentions légales** : SIRET, N° TVA, adresses, date, numérotation\n- **Cohérence des calculs** : HT, TVA, TTC, taux appliqués\n- **Validation SIRET / INSEE** : existence, activité, statut juridique\n- **Détection falsification visuelle** : métadonnées PDF, altérations, polices\n- **Détection doublons** : hash document, fingerprint cross-client\n- **Analyse comportementale** : fréquence, montants inhabituels, patterns`,
+    contact: { name: 'Finovox', email: 'api@finovox.io' },
+    license: { name: 'Propriétaire — usage restreint au client ASSURIX' },
+  },
+  servers: [
+    { url: 'http://localhost:3002', description: 'Serveur local (npm run dev)' },
+  ],
+  tags: [
+    { name: 'Analyse', description: 'Analyse anti-fraude de factures PDF' },
+    { name: 'Monitoring', description: 'Santé et monitoring du service' },
+  ],
+  security: [{ ApiKeyAuth: [] }],
+  paths: {
+    '/api/analyze': {
+      post: {
+        tags: ['Analyse'],
+        summary: 'Analyser une facture PDF',
+        description: 'Soumet un fichier PDF de facture pour analyse anti-fraude complète. Retourne un score de risque (0–100), le détail des 6 contrôles et les anomalies détectées.',
+        operationId: 'analyzeInvoice',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                required: ['file'],
+                properties: {
+                  file: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Fichier PDF de la facture — max 10 Mo',
+                  },
+                },
+              },
+            },
+          },
+        },
+        security: [{ ApiKeyAuth: [] }],
+        responses: {
+          200: {
+            description: 'Analyse réussie',
+            content: { 'application/json': { schema: { '$ref': '#/components/schemas/AnalyzeResponse' } } },
+          },
+          400: {
+            description: 'Fichier manquant ou format invalide',
+            content: { 'application/json': { schema: { '$ref': '#/components/schemas/ErrorResponse' } } },
+          },
+          401: {
+            description: 'Clé API invalide ou manquante',
+            content: { 'application/json': { schema: { '$ref': '#/components/schemas/ErrorResponse' } } },
+          },
+          500: {
+            description: 'Erreur interne lors de l\'analyse',
+            content: { 'application/json': { schema: { '$ref': '#/components/schemas/ErrorResponse' } } },
+          },
+        },
+      },
+    },
+    '/health': {
+      get: {
+        tags: ['Monitoring'],
+        summary: 'Vérifier l\'état du service',
+        operationId: 'healthCheck',
+        responses: {
+          200: {
+            description: 'Service opérationnel',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status:  { type: 'string', example: 'ok' },
+                    service: { type: 'string', example: 'finovox-antifraude' },
+                    version: { type: 'string', example: '2.0.0' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  components: {
+    schemas: {
+      AnalyzeResponse: {
+        type: 'object',
+        description: 'Résultat complet de l\'analyse anti-fraude',
+        properties: {
+          invoice_id:     { type: 'string',  example: 'FAC-2024-001',       description: 'Numéro de facture extrait du PDF' },
+          company:        { type: 'string',  example: 'Société Exemple SARL', description: 'Raison sociale de l\'émetteur (heuristique)' },
+          amount:         { type: 'string',  example: '€1 200,00',           description: 'Montant TTC détecté' },
+          num_pages:      { type: 'integer', example: 2,                     description: 'Nombre de pages du PDF' },
+          risk_score:     { type: 'integer', minimum: 0, maximum: 100, example: 45, description: 'Score de risque global — 0 = conforme, 100 = fraude probable' },
+          risk_level:     { type: 'string',  enum: ['high', 'medium', 'low'], example: 'medium', description: 'Niveau de risque — high (>65), medium (>35), low (≤35)' },
+          checks:         { type: 'array',   items: { '$ref': '#/components/schemas/CheckItem' }, description: 'Résultats des 6 contrôles anti-fraude' },
+          sub_scores:     { '$ref': '#/components/schemas/SubScores' },
+          findings:       { type: 'array',   items: { '$ref': '#/components/schemas/Finding' }, description: 'Anomalies et signaux détectés' },
+          legal_mentions: { '$ref': '#/components/schemas/LegalMentionsResult' },
+        },
+      },
+      CheckItem: {
+        type: 'object',
+        description: 'Résultat d\'un contrôle anti-fraude individuel',
+        properties: {
+          id:     { type: 'string', example: 'mentions',                        description: 'Identifiant du contrôle' },
+          name:   { type: 'string', example: 'Mentions légales obligatoires',   description: 'Nom du contrôle' },
+          desc:   { type: 'string', example: 'SIRET · N° TVA · Adresse · Date', description: 'Description courte' },
+          status: { type: 'string', enum: ['pass', 'warn', 'fail'],             description: 'pass = conforme · warn = à vérifier · fail = anomalie' },
+        },
+      },
+      SubScores: {
+        type: 'object',
+        description: 'Scores détaillés par dimension d\'analyse (0–100, plus élevé = plus risqué)',
+        properties: {
+          struct: { type: 'integer', example: 40, description: 'Score structurel — conformité des mentions légales' },
+          calc:   { type: 'integer', example: 0,  description: 'Cohérence des calculs HT/TVA/TTC (0 = non implémenté)' },
+          visual: { type: 'integer', example: 0,  description: 'Falsification visuelle et métadonnées (0 = non implémenté)' },
+          dup:    { type: 'integer', example: 0,  description: 'Détection de doublons (0 = non implémenté)' },
+        },
+      },
+      Finding: {
+        type: 'object',
+        description: 'Signal ou anomalie détecté lors de l\'analyse',
+        properties: {
+          type:   { type: 'string', enum: ['critical', 'warning', 'info'], description: 'Niveau de sévérité' },
+          icon:   { type: 'string', example: '🚨' },
+          title:  { type: 'string', example: 'SIRET absent',          description: 'Intitulé court de l\'anomalie' },
+          detail: { type: 'string', example: 'Aucun numéro SIRET (14 chiffres) détecté dans le PDF', description: 'Description détaillée' },
+        },
+      },
+      LegalMentionsResult: {
+        type: 'object',
+        description: 'Résultat détaillé du contrôle des mentions légales (8 sous-contrôles)',
+        properties: {
+          status:         { type: 'string', enum: ['OK', 'KO', 'ANOMALIE'], description: 'Statut global du contrôle' },
+          score:          { type: 'integer', minimum: 0, maximum: 100, description: 'Score de conformité (100 = toutes mentions présentes et valides)' },
+          missing_fields: { type: 'array', items: { type: 'string' }, example: ['siret', 'due_date_or_terms'], description: 'Champs obligatoires manquants' },
+          sub_controls:   { type: 'object', description: 'Détail des 8 sous-contrôles (SIRET, TVA, adresses, date, N° facture, échéance, lignes, pénalités)' },
+        },
+      },
+      ErrorResponse: {
+        type: 'object',
+        properties: {
+          error: { type: 'string', example: 'Aucun fichier PDF fourni (champ "file" manquant)' },
+        },
+      },
+    },
+    securitySchemes: {
+      ApiKeyAuth: {
+        type: 'apiKey',
+        in: 'header',
+        name: 'x-api-key',
+        description: 'Clé API Finovox — fournie lors de l\'onboarding client. Format : `fvx_live_…`',
+      },
+    },
+  },
+};
+
+let swaggerInitialized = false;
+
+function switchPage(page) {
+  document.getElementById('page-main').style.display    = page === 'main'    ? '' : 'none';
+  document.getElementById('page-swagger').style.display = page === 'swagger' ? '' : 'none';
+  document.getElementById('tab-main').classList.toggle('active',    page === 'main');
+  document.getElementById('tab-swagger').classList.toggle('active', page === 'swagger');
+
+  if (page === 'swagger' && !swaggerInitialized) {
+    SwaggerUIBundle({
+      spec: API_SPEC,
+      dom_id: '#swagger-ui',
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+      layout: 'BaseLayout',
+      deepLinking: false,
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 2,
+    });
+    swaggerInitialized = true;
+  }
 }
 
 // ===== INIT =====
 initHistory();
 </script>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
 </body>
 </html>

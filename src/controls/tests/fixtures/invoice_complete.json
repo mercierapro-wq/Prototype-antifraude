@@ -1,0 +1,5 @@
+{
+  "_comment": "Facture française complète — tous les champs valides. Score attendu : 100",
+  "source": "pdf-parse",
+  "text": "ELECTRICITE EXPRESS SAS\n15 rue des Artisans\n75011 PARIS\nSIRET : 732 829 320 00074\nN° TVA : FR44732829320\n\nFACTURE N° FAC-2024-00312\nDate d'émission : 15/03/2024\n\nFacturé à :\nAssurance Prévoyance Mutuelle\n8 avenue de la République\n69002 LYON\n\nDésignation                          Montant HT\n--------------------------------------------------\nRemplacement tableau électrique       1 000,00 €\nMain d'œuvre (8h)                       320,00 €\nFournitures diverses                     80,00 €\n--------------------------------------------------\nTotal HT                              1 400,00 €\nTVA 20%                                 280,00 €\nTotal TTC                             1 680,00 €\n\nConditions de paiement : 30 jours date de facture.\nÉchéance : 14/04/2024\n\nEn cas de retard de paiement, des pénalités de retard au taux légal en vigueur seront appliquées,\nainsi qu'une indemnité forfaitaire de recouvrement de 40 €."
+}
