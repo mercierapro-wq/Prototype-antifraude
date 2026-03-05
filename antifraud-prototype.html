@@ -1131,7 +1131,7 @@ function switchTab(btn, tabId) {
 })();
 
 // ===== API =====
-const API_BASE = 'http://localhost:3002/api';
+const API_BASE = '/api';
 
 async function analyzeWithBackend(file) {
   const apiKey = document.getElementById('api-key-input').value.trim();
@@ -1249,7 +1249,8 @@ const API_SPEC = {
     license: { name: 'Propriétaire — usage restreint au client ASSURIX' },
   },
   servers: [
-    { url: 'http://localhost:3002', description: 'Serveur local (npm run dev)' },
+    { url: 'https://antifraude.nodalforge.cloud', description: 'Production' },
+    { url: 'http://localhost:3002', description: 'Local (npm run dev)' },
   ],
   tags: [
     { name: 'Analyse', description: 'Analyse anti-fraude de factures PDF' },

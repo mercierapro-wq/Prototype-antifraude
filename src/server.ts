@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import path from 'path';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { analyzeRouter } from './routes/analyze';
@@ -37,7 +38,9 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'finovox-antifraude', version: '2.0.0' });
 });
 
-app.get('/', (_req, res) => res.json({ service: 'finovox-antifraude', docs: '/health' }));
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../antifraud-prototype.html'));
+});
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => res.status(204).end());
 
 // ─── Démarrage ────────────────────────────────────────────────────────────────
